@@ -12,7 +12,7 @@ const connection = async () => {
 
     // Event listeners
     ari.on("StasisStart", StasisStart);
-    ari.on("StasisEnd", HangupRequested);
+    ari.on("StasisEnd", HangUpCall);
 
     // Start ARI
     ari.start("ivr-by-zain");
@@ -40,8 +40,7 @@ const StasisStart = async (event, channel) => {
     });
 
     // Main-menu DTMF Handler
-    const DtmfReceivedMain = async (event) => {
-      const digit = parseInt(event.digit);
+    DtmfInput(channel, async (digit) => {
       log("DTMF received, User pressed:", digit);
       log("Channel ID:", channel.id);
       switch (digit) {
@@ -55,12 +54,7 @@ const StasisStart = async (event, channel) => {
           await InvalidOption(channel);
           break;
       }
-      // Remove event listeners
-      channel.removeListener("ChannelDtmfReceived", DtmfReceivedMain);
-    };
-
-    // Add DTMF listener in main-menu
-    channel.on("ChannelDtmfReceived", DtmfReceivedMain);
+    });
   } catch (e) {
     log("Error handling stasis event:", e);
   }
@@ -80,8 +74,7 @@ const Submenu = async (channel, mainMenuOption) => {
     });
 
     // Handle user inputs
-    const SubmenuOptions = async (event) => {
-      const digit = parseInt(event.digit);
+    DtmfInput(channel, async (digit) => {
       log("DTMF received in submenu, User pressed:", digit);
       log("Channel ID:", channel.id);
       if (digit >= 1 && digit <= 6) {
@@ -94,12 +87,7 @@ const Submenu = async (channel, mainMenuOption) => {
       } else {
         await InvalidOption(channel);
       }
-      // Remove event listeners
-      channel.removeListener("ChannelDtmfReceived", SubmenuOptions);
-    };
-
-    // Add event listener for DTMF input in the submenu
-    channel.on("ChannelDtmfReceived", SubmenuOptions);
+    });
   } catch (e) {
     log("Error handling sub-menu:", e);
   }
@@ -113,20 +101,28 @@ const InvalidOption = async (channel) => {
   await StasisStart(null, channel);
 };
 
-// Call hangup request
-const HangupRequested = async (event, channel) => {
-  log("Call hangup requested, Channel id:", channel.id);
-  hangUpCall(channel);
-};
-
 // HangUp call
-const hangUpCall = async (channel) => {
+const HangUpCall = async (event, channel) => {
   try {
-    await channel.hangup();
-    log("Call hung up, channel id:", channel.id);
+    log("Call hangup requested, Channel id:", channel.id);
+    if (channel.state !== "destroyed") {
+      await channel.hangup();
+      log("Call hung up, channel id:", channel.id);
+    }
+    log("Call hung up");
   } catch (e) {
     log("Error hanging up call:", e.message);
   }
+};
+
+// Function to wait for DTMF input
+const DtmfInput = async (channel, callback) => {
+  const DtmfReceived = async (event) => {
+    const digit = parseInt(event.digit);
+    channel.removeListener("ChannelDtmfReceived", DtmfReceived);
+    await callback(digit);
+  };
+  channel.on("ChannelDtmfReceived", DtmfReceived);
 };
 
 connection();
