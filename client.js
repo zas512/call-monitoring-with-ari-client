@@ -1,10 +1,14 @@
-const client = require("ari-client");
+import Client from "ari-client";
 const log = console.log;
+
+// Global variables
+let userInput = false;
+let userInputWaiting = true;
 
 const connection = async () => {
   try {
     // Connect to asterisk
-    const ari = await client.connect(
+    const ari = await Client.connect(
       "http://localhost:9088",
       "asterisk",
       "asterisk"
@@ -33,16 +37,21 @@ const StasisStart = async (event, channel) => {
     } catch (error) {
       log("Error answering the call:", error.message);
     }
+    log("Main menu prompt played");
 
     // Prompt for the main menu
     await channel.play({
       media: "sound:/var/lib/asterisk/sounds/ari-main-menu",
     });
 
+    //Check userinput
+    CheckUserInput(channel);
+
     // Main-menu DTMF Handler
     DtmfInput(channel, async (digit) => {
       log("DTMF received, User pressed:", digit);
       log("Channel ID:", channel.id);
+      userInput = false;
       switch (digit) {
         case 1:
           await Submenu(channel, "eng");
@@ -73,8 +82,12 @@ const Submenu = async (channel, mainMenuOption) => {
       media: `sound:/var/lib/asterisk/sounds/ari-${mainMenuOption}`,
     });
 
+    // Check user input
+    CheckUserInput(channel);
+
     // Handle user inputs
     DtmfInput(channel, async (digit) => {
+      userInput = false;
       log("DTMF received in submenu, User pressed:", digit);
       log("Channel ID:", channel.id);
       if (digit >= 1 && digit <= 6) {
@@ -115,14 +128,49 @@ const HangUpCall = async (event, channel) => {
   }
 };
 
-// Function to wait for DTMF input
+// DTMF input function
 const DtmfInput = async (channel, callback) => {
   const DtmfReceived = async (event) => {
+    userInput = true;
+    userInputWaiting = false;
     const digit = parseInt(event.digit);
     channel.removeListener("ChannelDtmfReceived", DtmfReceived);
     await callback(digit);
+    userInputWaiting = true;
   };
   channel.on("ChannelDtmfReceived", DtmfReceived);
+};
+
+// Wait for user input
+const CheckUserInput = (channel) => {
+  setTimeout(() => {
+    if (userInput == false) {
+      log("Waiting for user input");
+      userInput = true;
+      let count = 0;
+      const intervalId = setInterval(() => {
+        count++;
+        console.log("Attempt:", count);
+        if (userInputWaiting) {
+          playSound(channel);
+        }
+        if (count === 3) {
+          clearInterval(intervalId);
+          if (userInputWaiting) {
+            HangUpCall(channel);
+          }
+        }
+      }, 5000);
+    }
+  }, 5000);
+};
+const playSound = async (channel) => {
+  try {
+    log("Playin try again sound");
+    await channel.play({
+      media: "sound:/var/lib/asterisk/sounds/pls-try-again",
+    });
+  } catch (e) {}
 };
 
 connection();
