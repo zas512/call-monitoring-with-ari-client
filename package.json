@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "ari-client": "^1.2.0",
-    "mysql2": "^3.5.2"
+    "mysql2": "^3.5.2",
+    "sequelize": "^6.32.1"
   },
   "name": "zain_ari",
   "version": "1.0.0",
