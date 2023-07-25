@@ -98,10 +98,25 @@ const Submenu = async (channel, mainMenuOption) => {
       return;
     }
 
-    // Play prompt for the submenu
-    await channel.play({
+    /* await channel.play({
       media: `sound:/var/lib/asterisk/sounds/ari-${mainMenuOption}`,
+    }); */
+
+    const langPrompt = await MainPrompts.findOne({
+      where: {
+        file_name: `ari-${mainMenuOption}`,
+      },
     });
+
+    // Play prompt for the submenu
+    if (langPrompt) {
+      await channel.play({
+        media: `sound:${langPrompt.file_path}`,
+      });
+    } else {
+      await InvalidOption(channel);
+      return;
+    }
 
     // Check user input
     CheckUserInput(channel);
@@ -112,9 +127,21 @@ const Submenu = async (channel, mainMenuOption) => {
       log("DTMF received in submenu, User pressed:", digit);
       log("Channel ID:", channel.id);
       if (digit >= 1 && digit <= 6) {
-        await channel.play({
-          media: `sound:/var/lib/asterisk/sounds/ari-${mainMenuOption}-${digit}`,
+        const submenuDigitPrompt = await (mainMenuOption === "eng"
+          ? EngPrompts
+          : UrduPrompts
+        ).findOne({
+          where: {
+            file_name: `ari-${mainMenuOption}-${digit}`,
+          },
         });
+        if (submenuDigitPrompt) {
+          await channel.play({
+            media: `sound:${submenuDigitPrompt.file_path}`,
+          });
+        } else {
+          await InvalidOption(channel);
+        }
       } else if (digit === 0) {
         // Go back to the main menu
         await StasisStart(null, channel);
@@ -129,9 +156,29 @@ const Submenu = async (channel, mainMenuOption) => {
 
 // Invalid option handler
 const InvalidOption = async (channel) => {
-  await channel.play({
-    media: "sound:/var/lib/asterisk/sounds/you-dialed-wrong-number",
-  });
+  try {
+    const invalidPrompt = await MainPrompts.findOne({
+      where: {
+        file_name: "wrong",
+      },
+    });
+    if (invalidPrompt) {
+      await channel.play({
+        media: `sound:${invalidPrompt.file_path}`,
+      });
+    } else {
+      log(
+        "Invalid option prompt not found in the database. Playing default prompt."
+      );
+      await channel.play({
+        media: "sound:/var/lib/asterisk/sounds/you-dialed-wrong-number",
+      });
+    }
+  } catch (error) {
+    log("Error playing invalid option prompt:", error.message);
+  }
+
+  // Go back to the main menu
   await StasisStart(null, channel);
 };
 
@@ -187,11 +234,26 @@ const CheckUserInput = (channel) => {
 };
 const playSound = async (channel) => {
   try {
-    log("Playing try again sound");
-    await channel.play({
-      media: "sound:/var/lib/asterisk/sounds/pls-try-again",
+    const tryAgainPrompt = await MainPrompts.findOne({
+      where: {
+        file_name: "try_again",
+      },
     });
-  } catch (e) {}
+    if (tryAgainPrompt) {
+      await channel.play({
+        media: `sound:${tryAgainPrompt.file_path}`,
+      });
+    } else {
+      log(
+        "Try again prompt not found in the database. Playing default prompt."
+      );
+      await channel.play({
+        media: "sound:/var/lib/asterisk/sounds/pls-try-again",
+      });
+    }
+  } catch (error) {
+    log("Error playing try again prompt:", error.message);
+  }
 };
 
 async function main() {
