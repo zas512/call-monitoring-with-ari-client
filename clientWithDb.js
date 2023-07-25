@@ -43,14 +43,29 @@ const StasisStart = async (event, channel) => {
     } catch (error) {
       log("Error answering the call:", error.message);
     }
-    log("Main menu prompt played");
 
-    // Prompt for the main menu
-    await channel.play({
-      media: "sound:/var/lib/asterisk/sounds/ari-main-menu",
+    // Retrieve and play the main menu prompt from the database
+    const mainPrompt = await MainPrompts.findOne({
+      where: {
+        file_name: "main-menu",
+      },
     });
+    log(mainPrompt);
+    if (mainPrompt) {
+      await channel.play({
+        media: `sound:${mainPrompt.file_path}`,
+      });
+    } else {
+      // If main menu prompt is not found, play a default prompt
+      log(
+        "Main menu prompt not found in the database. Playing default prompt."
+      );
+      await channel.play({
+        media: "sound:/var/lib/asterisk/sounds/default-main-menu-prompt",
+      });
+    }
 
-    //Check userinput
+    //Check user input
     CheckUserInput(channel);
 
     // Main-menu DTMF Handler
@@ -172,7 +187,7 @@ const CheckUserInput = (channel) => {
 };
 const playSound = async (channel) => {
   try {
-    log("Playin try again sound");
+    log("Playing try again sound");
     await channel.play({
       media: "sound:/var/lib/asterisk/sounds/pls-try-again",
     });

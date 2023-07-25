@@ -6,51 +6,72 @@ const sequelize = new Sequelize("AudioMenu", "zain1", "zain1", {
   logging: false,
 });
 
-const MainPrompts = sequelize.define("main_prompts", {
-  user_input: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
+const MainPrompts = sequelize.define(
+  "MainPrompts",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    file_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    file_path: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
-  file_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  file_path: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
+  {
+    tableName: "main_prompts",
+    timestamps: false,
+  }
+);
 
-const EngPrompts = sequelize.define("eng_prompts", {
-  user_input: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
+const EngPrompts = sequelize.define(
+  "EngPrompts",
+  {
+    user_input: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+    },
+    file_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    file_path: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
-  file_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  file_path: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
+  {
+    tableName: "eng_prompts",
+    timestamps: false,
+  }
+);
 
-const UrduPrompts = sequelize.define("urdu_prompts", {
-  user_input: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
+const UrduPrompts = sequelize.define(
+  "UrduPrompts",
+  {
+    user_input: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+    },
+    file_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    file_path: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
-  file_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  file_path: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-});
+  {
+    tableName: "urdu_prompts",
+    timestamps: false,
+  }
+);
 
 const connectToDb = async () => {
   try {
