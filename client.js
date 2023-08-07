@@ -166,7 +166,7 @@ const CheckUserInput = (channel) => {
 };
 const playSound = async (channel) => {
   try {
-    log("Playin try again sound");
+    log("Playing try again sound");
     await channel.play({
       media: "sound:/var/lib/asterisk/sounds/pls-try-again",
     });
